@@ -1,25 +1,36 @@
-var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls("http://localhost:5000");
-// Add services to the container.
+using Microsoft.EntityFrameworkCore;
+  using HotelCheckInSystem.Data;
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+  var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+  builder.WebHost.UseUrls("http://0.0.0.0:5000"); // Bind to all interfaces
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+  // Add services to the container.
+  builder.Services.AddControllers();
+  builder.Services.AddDbContext<HotelContext>(options =>
+      options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+  builder.Services.AddCors(options =>
+  {
+      options.AddPolicy("AllowFrontend", policy =>
+      {
+          policy.WithOrigins("http://127.0.0.1:8080") // Match your frontend origin
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+      });
+  });
 
-app.UseHttpsRedirection();
+  var app = builder.Build();
 
-app.UseAuthorization();
+  // Configure the HTTP request pipeline.
+  if (app.Environment.IsDevelopment())
+  {
+      app.UseDeveloperExceptionPage(); // Enable detailed error pages
+  }
 
-app.MapControllers();
+  app.UseRouting();
+  app.UseCors("AllowFrontend"); // Apply the CORS policy
+  app.UseAuthorization();
 
-app.Run();
+  app.MapControllers();
+
+  app.Run();
